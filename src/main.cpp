@@ -106,13 +106,15 @@ static void notifyCallback(
   {
     uint16_t val = littleEndianInt(&pData[i]);
     float temp = val / 10;
+    // convert C to F
+    temp = (temp * 9.0/5.0) + 32.0;
     ESP_LOGI("BBQ", "Probe %d has value %f", probeId, temp);
     if(((int)temp)<PROBEERRORVALUE)
     {
       if (mqttIsConnected())
       {
         char temperature_out[255];
-        sprintf(temperature_out, "inkbird/probe%d", probeId);
+        sprintf(temperature_out, "%s/probe%d", MQTT_TOPIC_PREFIX, probeId);
         mqttclient.publish(temperature_out, String((int)temp).c_str());
         ESP_LOGI("BBQ", "Publish %d to topic %s", (int)temp, temperature_out);
       }
@@ -174,8 +176,10 @@ static void notifyResultsCallback(
     ESP_LOGI("BBQ", "currentVoltage %d::maxVoltage %d::perc %d", currentVoltage, maxVoltage, (int)battery_percent);
     if (mqttIsConnected())
     {
-      mqttclient.publish("inkbird/batteryLevel", String((int)battery_percent).c_str());
-      ESP_LOGI("BBQ", "Publish %f to topic %s", battery_percent, "inkbird/batteryLevel");
+      char battery_level_out[255];
+      sprintf(battery_level_out, "%s/%s", MQTT_TOPIC_PREFIX, "battery_percent");
+      mqttclient.publish(battery_level_out, String((int)battery_percent).c_str());
+      ESP_LOGI("BBQ", "Publish %f to topic %s", battery_percent, battery_level_out);
     }
 
     break;
@@ -390,7 +394,7 @@ void setupWIFI()
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   setLogLevel();
 
   setupWIFI();
